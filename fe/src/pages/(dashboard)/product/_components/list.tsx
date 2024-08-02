@@ -1,58 +1,141 @@
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 
-import {
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
-} from "@tanstack/react-table";
+import instance from "@/configs/axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, message, Popconfirm, Table, TableColumnsType } from "antd";
 import { Plus } from "lucide-react";
-import { Link } from "react-router-dom";
-
-import { useProductQuery } from "@/common/hooks/useProductQuery";
 import { useState } from "react";
-import { columns } from "./Column";
-import DataTable from "./DataTable";
-import FooterTable from "./FooterTable";
-import HeaderTable from "./HeaderTable";
+import { Link } from "react-router-dom";
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
+interface DataType {
+    name: string;
+    price: string;
+    image: string;
+    category: string
+    // gallery: string[]
+    description: string
+    discount: number
+    featured: boolean
+    countInStock: number
+    // attributes: string[]
 
+}
+
+
+
+
+
+
+const rowSelection = {
+    onChange: (selectedRowKeys: React.Key[], selectedRows: DataType[]) => {
+        console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+    },
+    getCheckboxProps: (record: DataType) => ({
+        disabled: record.name === 'Disabled User', // Column configuration not to be checked
+        name: record.name,
+    }),
+};
 const ProductList = () => {
-    const { data, isLoading } = useProductQuery({
-        _expand: "category",
-        _limit: 100,
-    });
-    const [sorting, setSorting] = useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
-        {},
-    );
-    const [rowSelection, setRowSelection] = useState({});
-
-    const table = useReactTable({
-        data: data?.data ?? [],
-        columns,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        state: {
-            sorting,
-            columnFilters,
-            columnVisibility,
-            rowSelection,
+    const [messageAPI, contextHolder] = message.useMessage()
+    const [selectionType] = useState<'checkbox' | 'radio'>('checkbox');
+    const queryClient = useQueryClient()
+    const { data: categories } = useQuery({
+        queryKey: ['CATEGORY'],
+        queryFn: async () => {
+            const { data } = await instance.get('/categories')
+            return data
+        }
+    })
+    const { data } = useQuery({
+        queryKey: ['PRODUCTS'],
+        queryFn: async () => {
+            const { data } = await instance.get('/products')
+            return data
+        }
+    })
+    const { mutate } = useMutation({
+        mutationFn: async (id: string) => {
+            const { data } = await instance.delete(`/products/${id}`)
+            return data
         },
-    });
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ['PRODUCTS']
+            })
+            messageAPI.open({
+                type: 'success',
+                content: 'Xóa sản phẩm thành công',
+            })
+        }
+    })
+
+
+    const categoriesMap = new Map(categories?.map((category: any) => [category._id, category.name]));
+    const datas = data?.data?.map((product: any) => ({
+        key: product._id,
+        ...product,
+        category: categoriesMap.get(product.category)
+    }))
+
+    const columns: TableColumnsType<DataType> = [
+        {
+            title: 'Ảnh',
+            dataIndex: 'image',
+            render: (_: any, product: any) => (
+                <img src={product.image} alt={product.name} style={{ width: '50px', height: '50px' }} />
+            )
+        },
+        {
+            title: 'Tên sản phẩm',
+            dataIndex: 'name',
+        },
+        {
+            title: 'Giá sản phẩm',
+            dataIndex: 'price',
+        },
+        {
+            title: 'Danh mục',
+            dataIndex: 'category',
+            render: (_: any, product: any) => (
+                <span>{product?.category}</span>
+            )
+        },
+        {
+            title: 'Số lượng',
+            dataIndex: 'countInStock',
+        },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'featured',
+            render: (featured) => (
+                <span>{featured ? 'Có' : 'Không'}</span>
+            )
+        },
+        {
+            title: 'Thao tác',
+            dataIndex: 'action',
+            render: (_: any, product: any) => (
+                <div className="flex justify-center space-x-2">
+                    <Link to={`/admin/products/${product._id}/edit`}>
+                        <EditOutlined />
+                    </Link>
+                    <Popconfirm
+                        title="Delete the task"
+                        description="Are you sure to delete this task?"
+                        onConfirm={() => mutate(product._id)}
+                        // onCancel={cancel}
+                        okText="Yes"
+                        cancelText="No"
+                    >
+                        <DeleteOutlined />
+                    </Popconfirm>
+                </div>
+            )
+        },
+    ];
     return (
         <>
+
+            {contextHolder}
             <div className="flex justify-between items-center py-3">
                 <div className="space-y-0.5">
                     <h2 className="text-2xl font-bold tracking-tight">
@@ -74,57 +157,15 @@ const ProductList = () => {
             <hr />
             <div className="my-5">
                 <div className="w-full">
-                    <div className="flex items-center py-4">
-                        <HeaderTable table={table} />
-                    </div>
-                    <div className="rounded-md border">
-                        {isLoading ? (
-                            <>
-                                <table className="w-full">
-                                    <thead>
-                                        <th>
-                                            <Skeleton className="w-full h-[25px] rounded-full" />
-                                        </th>
-                                        <th>
-                                            <Skeleton className="w-full h-[25px] rounded-full" />
-                                        </th>
-                                        <th>
-                                            <Skeleton className="w-full h-[25px] rounded-full" />
-                                        </th>
-                                        <th>
-                                            <Skeleton className="w-full h-[25px] rounded-full" />
-                                        </th>
-                                        <th>
-                                            <Skeleton className="w-full h-[25px] rounded-full" />
-                                        </th>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <Skeleton className="w-full h-[25px] rounded-full" />
-                                            </td>
-                                            <td>
-                                                <Skeleton className="w-full h-[25px] rounded-full" />
-                                            </td>
-                                            <td>
-                                                <Skeleton className="w-full h-[25px] rounded-full" />
-                                            </td>
-                                            <td>
-                                                <Skeleton className="w-full h-[25px] rounded-full" />
-                                            </td>
-                                            <td>
-                                                <Skeleton className="w-full h-[25px] rounded-full" />
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </>
-                        ) : (
-                            <DataTable table={table} column={columns} />
-                        )}
-                    </div>
-                    <div className="flex items-center justify-end space-x-2 py-4">
-                        <FooterTable table={table} />
+                    <div>
+                        <Table
+                            rowSelection={{
+                                type: selectionType,
+                                ...rowSelection,
+                            }}
+                            columns={columns}
+                            dataSource={datas}
+                        />
                     </div>
                 </div>
             </div>

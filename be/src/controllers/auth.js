@@ -1,9 +1,9 @@
 import bcryptjs from "bcryptjs";
 import { StatusCodes } from "http-status-codes";
 import Joi from "joi";
-import jwt from "jsonwebtoken";
+// import jwt from "jsonwebtoken";
 import User from "../models/user";
-
+// import BlacklistedToken from "./black-list-token"
 const signupSchema = Joi.object({
     name: Joi.string().min(3).max(30).required().messages({
         "any.required": "Trường Name là bắt buộc",
@@ -30,7 +30,12 @@ const signupSchema = Joi.object({
         "string.uri": "Trường Avatar phải là đường dẫn hợp lệ",
     }),
 });
-
+// const generateRefreshToken = (userId) => {
+//     return jwt.sign({ userId }, "123456", { expiresIn: "7d" });
+// };
+// const generateAccessToken = (userId) => {
+//     return jwt.sign({ userId }, "123456", { expiresIn: "15m" });
+// };
 export const signup = async (req, res) => {
     const { email, password, name, avatar } = req.body;
     const { error } = signupSchema.validate(req.body, { abortEarly: false });
@@ -76,12 +81,74 @@ export const signin = async (req, res) => {
             messages: ["Mật khẩu không chính xác"],
         });
     }
-    const token = jwt.sign({ userId: user._id }, "123456", {
-        expiresIn: "7d",
-    });
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id); // Generate refresh token
+
     return res.status(StatusCodes.OK).json({
-        user,
-        token,
+        accessToken,
+        refreshToken,
     });
 };
-export const logout = async (req, res) => {};
+// export const logout = async (req, res) => {
+//     try {
+//         const token = req.headers.authorization;
+//         if (!token) {
+//             return res.status(StatusCodes.BAD_REQUEST).json({ error: "No token provided" });
+//         }
+//         // Lưu token vào danh sách đen (blacklist) để ngăn không cho token đó được sử dụng nữa
+//         const blacklistedToken = new BlacklistedToken({ token });
+//         await blacklistedToken.save();
+
+//         // Gửi phản hồi thành công
+//         res.status(StatusCodes.OK).json({ message: "Successfully logged out" });
+//     } catch (error) {
+//         console.error(`Error during logout:`, error);
+//         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Internal Server Error" });
+//     }
+// };
+
+// be/src/controllers/auth.js
+// export const refreshToken = async (req, res) => {
+//     try {
+//         const oldToken = req.headers.authorization;
+//         if (!oldToken) {
+//             return res.status(StatusCodes.BAD_REQUEST).json({ error: "No token provided" });
+//         }
+
+//         // Kiểm tra token có trong blacklist
+//         const isBlacklisted = await isTokenBlacklisted(oldToken);
+//         if (isBlacklisted) {
+//             return res.status(StatusCodes.UNAUTHORIZED).json({ error: "Token is blacklisted" });
+//         }
+
+//         // Giải mã oldToken để lấy userId
+//         let decoded;
+//         try {
+//             decoded = jwt.verify(oldToken, "123456"); // Sử dụng cùng secret key như khi tạo token
+//         } catch (error) {
+//             if (error.name === "TokenExpiredError") {
+//                 return res.status(StatusCodes.UNAUTHORIZED).json({ error: "Token expired" });
+//             } else {
+//                 return res.status(StatusCodes.UNAUTHORIZED).json({ error: "Invalid token" });
+//             }
+//         }
+
+//         const userId = decoded.userId;
+//         if (!userId) {
+//             return res.status(StatusCodes.BAD_REQUEST).json({ error: "Invalid token payload" });
+//         }
+
+//         // Tạo refreshToken mới
+//         const newToken = generateRefreshToken(userId);
+
+//         // Trả về refreshToken mới cho client
+//         res.status(StatusCodes.OK).json({ newToken });
+//     } catch (error) {
+//         console.error(`Error during token refresh:`, error);
+//         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Internal Server Error" });
+//     }
+// };
+// export const isTokenBlacklisted = async (token) => {
+//     const tokenInBlacklist = await BlacklistedToken.findOne({ token });
+//     return !!tokenInBlacklist;
+// };

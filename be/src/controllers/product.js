@@ -13,18 +13,23 @@ export const create = async (req, res) => {
 
 export const getAllProducts = async (req, res) => {
     const { _page = 1, _limit = 10, _sort = "createdAt", _order = "asc", _expand } = req.query;
+
     const options = {
-        page: _page,
-        limit: _limit,
+        page: parseInt(_page),
+        limit: parseInt(_limit),
         sort: { [_sort]: _order === "desc" ? -1 : 1 },
     };
+
     const populateOptions = _expand ? [{ path: "category", select: "name" }] : [];
+
     try {
         const result = await Product.paginate(
-            { categoryId: null },
+            {},
             { ...options, populate: populateOptions }
         );
+
         if (result.docs.length === 0) throw new Error("No products found");
+
         const response = {
             data: result.docs,
             pagination: {
@@ -33,12 +38,12 @@ export const getAllProducts = async (req, res) => {
                 totalItems: result.totalDocs,
             },
         };
+
         return res.status(200).json(response);
     } catch (error) {
         return res.status(400).json({ message: error.message });
     }
 };
-
 export const getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -75,7 +80,7 @@ export const related = async (req, res) => {
             _id: { $ne: req.params.productId },
         });
         return res.status(StatusCodes.OK).json(product);
-    } catch (error) {}
+    } catch (error) { }
 };
 
 // iphone 13 product max => /product/iphone-13-product-max

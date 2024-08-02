@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { IProduct } from "../types/product";
 import { ProductJoiSchema } from "../validations/product";
-import { useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 
 type useProductMutationProps = {

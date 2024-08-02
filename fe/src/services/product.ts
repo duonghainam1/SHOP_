@@ -10,7 +10,6 @@ if (userDataString) {
         console.error('Không thể phân tích dữ liệu từ localStorage:', error);
     }
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getAllProducts = async (params?: any): Promise<IProduct[]> => {
     try {
         const response = await instance.get('/products', { params })

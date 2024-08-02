@@ -1,5 +1,4 @@
 import LayoutAdmin from "@/pages/(dashboard)/layout";
-import FormProduct from "@/pages/(dashboard)/product/_components/Form";
 import ProductManagement from "@/pages/(dashboard)/product/page";
 import Signin from "@/pages/(website)/(auth)/Signin";
 import NotFound from "@/pages/(website)/404/page";
@@ -10,10 +9,12 @@ import HomePage from "@/pages/(website)/home/page";
 import LayoutWebsite from "@/pages/(website)/layout";
 import OrderPage from "@/pages/(website)/order/page";
 import CategoryDetail from "@/pages/(website)/product/category/detail/page";
-import DetailProduct from "@/pages/(website)/product/detail/page";
-import ShopPage from "@/pages/(website)/product/page";
 import { Route, Routes } from "react-router-dom";
 import PrivateRoute from "./PrivateRoute";
+import Page from "@/pages/(website)/shop/Page";
+import Page_Detail from "@/pages/(website)/productDetail/Page";
+import AddProducts from "@/pages/(dashboard)/product/_components/AddProducts";
+import UpdateProducts from "@/pages/(dashboard)/product/_components/UpdateProducts";
 
 const Router = () => {
     return (
@@ -21,8 +22,8 @@ const Router = () => {
             <Routes>
                 <Route path="/" element={<LayoutWebsite />}>
                     <Route index element={<HomePage />} />
-                    <Route path="shop" element={<ShopPage />} />
-                    <Route path="products/:id" element={<DetailProduct />} />
+                    <Route path="shop" element={<Page />} />
+                    <Route path="products/:id" element={<Page_Detail />} />
                     <Route path="categories/:id" element={<CategoryDetail />} />
                     <Route path="about" element={<AboutPage />} />
                     <Route path="contact" element={<ContactPage />} />
@@ -39,8 +40,8 @@ const Router = () => {
                     }
                 >
                     <Route path="products" element={<ProductManagement />} />
-                    <Route path="products/add" element={<FormProduct />} />
-                    <Route path="products/:id/edit" element={<FormProduct />} />
+                    <Route path="products/add" element={<AddProducts />} />
+                    <Route path="products/:id/edit" element={<UpdateProducts />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
             </Routes>
